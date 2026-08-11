@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>C++ Source Obfuscator</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #1e1e2e;
+            color: #cdd6f4;
+            margin: 20px;
+        }
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #89b4fa;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+        .sub {
+            text-align: center;
+            color: #6c7086;
+            margin-top: -6px;
+            margin-bottom: 20px;
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .col {
+            flex: 1;
+            min-width: 300px;
+        }
+        .col h3 {
+            margin: 6px 0 8px 0;
+            font-weight: 400;
+            color: #a6adc8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .col h3 small {
+            font-weight: 300;
+            font-size: 12px;
+            color: #6c7086;
+        }
+        textarea {
+            width: 100%;
+            height: 420px;
+            background: #313244;
+            color: #cdd6f4;
+            border: 1px solid #45475a;
+            border-radius: 10px;
+            padding: 14px;
+            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+            font-size: 13.5px;
+            line-height: 1.6;
+            resize: vertical;
+            tab-size: 4;
+        }
+        textarea:focus {
+            outline: 2px solid #89b4fa;
+            outline-offset: -1px;
+        }
+        textarea[readonly] {
+            background: #28283a;
+        }
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin: 16px 0 18px 0;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        button {
+            background: #89b4fa;
+            color: #1e1e2e;
+            border: none;
+            padding: 9px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.15s ease;
+            letter-spacing: 0.3px;
+        }
+        button:hover {
+            background: #74c7ec;
+            transform: scale(1.03);
+        }
+        button:active {
+            transform: scale(0.96);
+        }
+        button.danger {
+            background: #f38ba8;
+        }
+        button.danger:hover {
+            background: #eba0ac;
+        }
+        button.outline {
+            background: transparent;
+            color: #89b4fa;
+            border: 1.5px solid #45475a;
+        }
+        button.outline:hover {
+            background: #313244;
+            border-color: #89b4fa;
+        }
+        .badge {
+            font-size: 13px;
+            background: #313244;
+            padding: 5px 16px;
+            border-radius: 30px;
+            color: #a6adc8;
+            border: 1px solid #45475a;
+            user-select: none;
+            margin-left: auto;
+            font-family: monospace;
+        }
+        .stats {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+            margin: 6px 0 10px 0;
+            font-size: 13px;
+            color: #6c7086;
+        }
+        .stats span {
+            background: #28283a;
+            padding: 2px 14px;
+            border-radius: 30px;
+        }
+        footer {
+            margin-top: 28px;
+            text-align: center;
+            color: #6c7086;
+            font-size: 13px;
+            border-top: 1px solid #313244;
+            padding-top: 18px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #313244;
+            color: #cdd6f4;
+            padding: 10px 28px;
+            border-radius: 12px;
+            border: 1px solid #45475a;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        @media (max-width: 700px) {
+            textarea {
+                height: 280px;
+            }
+            .badge {
+                margin-left: 0;
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🧪 C++ Source Obfuscator</h1>
+        <p class="sub">String encryption · Identifier renaming · Dead-code injection — all in your browser</p>
+
+        <div class="controls">
+            <button onclick="obfuscate()">⚡ Obfuscate</button>
+            <button onclick="loadSample()">📄 Load Sample</button>
+            <button class="danger" onclick="clearAll()">🗑️ Clear All</button>
+            <button class="outline" onclick="copyOutput()">📋 Copy Output</button>
+            <span class="badge" id="seedDisplay">Seed: random</span>
+        </div>
+
+        <div class="stats">
+            <span id="statLines">Lines: 0</span>
+            <span id="statIdentifiers">Identifiers: 0</span>
+            <span id="statStrings">Strings: 0</span>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                <h3>📄 Original C++ <small>paste your code</small></h3>
+                <textarea id="inputCode" spellcheck="false">// Paste your C++ code here</textarea>
+            </div>
+            <div class="col">
+                <h3>🔮 Obfuscated C++ <small>read-only</small></h3>
+                <textarea id="outputCode" spellcheck="false" readonly></textarea>
+            </div>
+        </div>
+
+        <footer>
+            Uses regex-based transforms – works well on small to medium programs.
+            For production, consider LLVM-based tools like <strong>Obfuscator-LLVM</strong>.
+        </footer>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ------------------------------------------------------------
+        //  C++ Obfuscator — JavaScript port
+        // ------------------------------------------------------------
+        class CppObfuscator {
+            constructor(seed) {
+                this.seed = seed || (Math.floor(Math.random() * 2 ** 32) >>> 0);
+                this.rng = this._mulberry32(this.seed);
+                this.stringKey = Math.floor(this.rng() * 254) + 1;
+                this.usedNames = new Set();
+                this.renameMap = {};
+                this.stringCount = 0;
+                this.idCount = 0;
+            }
+
+            _mulberry32(a) {
+                return function() {
+                    a |= 0;
+                    a = a + 0x6D2B79F5 | 0;
+                    let t = Math.imul(a ^ a >>> 15, 1 | a);
+                    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+                    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+                };
+            }
+
+            _randomName(prefix) {
+                prefix = prefix || '_';
+                const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+                for (let attempt = 0; attempt < 200; attempt++) {
+                    let name = prefix;
+                    for (let i = 0; i < 8; i++) {
+                        name += chars[Math.floor(this.rng() * chars.length)];
+                    }
+                    if (!this.usedNames.has(name) &&
+                        name !== 'main' &&
+                        !name.startsWith('__') &&
+                        !/^_[0-9]/.test(name)) {
+                        this.usedNames.add(name);
+                        return name;
+                    }
+                }
+                // fallback: use a counter
+                let name = prefix + 'x' + (this.usedNames.size + 1);
+                this.usedNames.add(name);
+                return name;
+            }
+
+            _decryptFunction() {
+                return `
+        static char* __obf_decrypt(const char* s, int len, int key) {
+            char* buf = new char[len + 1];
+            for (int i = 0; i < len; ++i) buf[i] = s[i] ^ key;
+            buf[len] = 0;
+            return buf;
+        }`;
+            }
+
+            obfuscate(code) {
+                let result = code;
+                this.stringCount = 0;
+                this.idCount = 0;
+
+                // ---- 1. Strip comments ----
+                result = result.replace(/\/\/.*$/gm, '');
+                result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+
+                // ---- 2. Encrypt string literals (skip #include lines) ----
+                const lines = result.split('\n');
+                const processed = [];
+                const stringLiterals = [];
+
+                for (let line of lines) {
+                    // skip preprocessor lines entirely
+                    if (/^\s*#/.test(line)) {
+                        processed.push(line);
+                        continue;
+                    }
+
+                    // Replace "..." with __obf_decrypt("enc", len, key)
+                    // Handle raw string literals R"(...)" by skipping them
+                    if (/R"[^"]*\("[^)]*\)"[^"]*"/.test(line)) {
+                        processed.push(line);
+                        continue;
+                    }
+
+                    let newLine = line.replace(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, (match, content) => {
+                        if (content === undefined) return match;
+                        this.stringCount++;
+                        let enc = '';
+                        for (let i = 0; i < content.length; i++) {
+                            const x = content.charCodeAt(i) ^ this.stringKey;
+                            enc += '\\x' + x.toString(16).padStart(2, '0');
+                        }
+                        return `__obf_decrypt("${enc}", ${content.length}, ${this.stringKey})`;
+                    });
+
+                    processed.push(newLine);
+                }
+                result = processed.join('\n');
+
+                // ---- 3. Insert decrypt function after includes ----
+                let insertPos = 0;
+                const includeRegex = /^\s*#include\s*[<"][^>"]+[>"]/gm;
+                let lastInclude = -1;
+                let m;
+                while ((m = includeRegex.exec(result)) !== null) {
+                    lastInclude = m.index + m[0].length;
+                }
+                if (lastInclude !== -1) {
+                    // find the end of the line
+                    const nl = result.indexOf('\n', lastInclude);
+                    if (nl !== -1) insertPos = nl + 1;
+                    else insertPos = result.length;
+                }
+                // also handle using namespace / other top-level stuff
+                // we want to insert after all includes and using directives
+                const topLines = result.split('\n');
+                let insertLine = 0;
+                for (let i = 0; i < topLines.length; i++) {
+                    const trimmed = topLines[i].trim();
+                    if (trimmed.startsWith('#include') || trimmed.startsWith('using ')) {
+                        insertLine = i + 1;
+                    } else if (trimmed === '' || trimmed.startsWith('//')) {
+                        // skip empty/comments
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                // rebuild with decrypt function inserted
+                const before = topLines.slice(0, insertLine).join('\n');
+                const after = topLines.slice(insertLine).join('\n');
+                result = before + '\n' + this._decryptFunction() + '\n' + after;
+
+                // ---- 4. Rename identifiers ----
+                const keywords = new Set([
+                    'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'default', 'break', 'continue',
+                    'return', 'goto',
+                    'try', 'catch', 'throw', 'class', 'struct', 'union', 'enum', 'typedef', 'const', 'static',
+                    'inline',
+                    'virtual', 'public', 'protected', 'private', 'new', 'delete', 'sizeof', 'this', 'friend',
+                    'using',
+                    'namespace', 'template', 'typename', 'operator', 'bool', 'char', 'int', 'float', 'double',
+                    'void',
+                    'short', 'long', 'signed', 'unsigned', 'constexpr', 'auto', 'decltype', 'noexcept',
+                    'nullptr',
+                    'true', 'false', 'and', 'or', 'xor', 'not', 'bitand', 'bitor', 'compl',
+                    'export', 'register', 'volatile', 'mutable', 'explicit', 'typename', 'typeid',
+                    'alignas', 'alignof', 'char16_t', 'char32_t', 'const_cast', 'dynamic_cast',
+                    'reinterpret_cast', 'static_cast', 'thread_local', 'override', 'final'
+                ]);
+
+                const stdNames = new Set([
+                    'std', 'cout', 'cin', 'cerr', 'clog', 'wcout', 'wcin', 'wcerr', 'wclog',
+                    'endl', 'ends', 'flush', 'boolalpha', 'noboolalpha', 'showbase', 'noshowbase',
+                    'showpoint', 'noshowpoint', 'showpos', 'noshowpos', 'skipws', 'noskipws',
+                    'unitbuf', 'nounitbuf', 'uppercase', 'nouppercase', 'dec', 'hex', 'oct',
+                    'fixed', 'scientific', 'hexfloat', 'defaultfloat', 'left', 'right', 'internal',
+                    'string', 'vector', 'map', 'set', 'multimap', 'multiset', 'unordered_map',
+                    'unordered_set', 'unordered_multimap', 'unordered_multiset', 'deque', 'queue',
+                    'priority_queue', 'stack', 'pair', 'tuple', 'optional', 'variant', 'any',
+                    'array', 'bitset', 'valarray', 'list', 'forward_list',
+                    'algorithm', 'iterator', 'numeric', 'functional', 'memory', 'utility',
+                    'chrono', 'thread', 'mutex', 'lock_guard', 'unique_lock', 'shared_lock',
+                    'condition_variable', 'future', 'promise', 'async', 'packaged_task',
+                    'shared_future', 'atomic', 'shared_ptr', 'unique_ptr', 'weak_ptr',
+                    'enable_shared_from_this', 'allocator', 'initializer_list',
+                    'printf', 'scanf', 'fprintf', 'fscanf', 'sprintf', 'sscanf', 'snprintf',
+                    'main', 'wmain', 'WinMain', 'wWinMain'
+                ]);
+
+                // Collect all identifiers that can be renamed
+                const idRegex = /\b([A-Za-z_]\w*)\b/g;
+                const tokens = new Set();
+                let match;
+                // We need to avoid matching inside the decrypt function we just added
+                // but since we're processing the whole code, we'll just skip __obf_decrypt
+                while ((match = idRegex.exec(result)) !== null) {
+                    const token = match[1];
+                    if (token === '__obf_decrypt') continue;
+                    if (!keywords.has(token) && !stdNames.has(token) &&
+                        !token.startsWith('__') && !/^_[0-9]/.test(token) &&
+                        !this.renameMap[token]) {
+                        tokens.add(token);
+                    }
+                }
+
+                // Sort tokens by length descending to avoid partial replacements
+                const sortedTokens = Array.from(tokens).sort((a, b) => b.length - a.length);
+                for (const t of sortedTokens) {
+                    this.renameMap[t] = this._randomName('_');
+                    this.idCount++;
+                }
+
+                // Replace all occurrences with word boundaries
+                // We use a single pass with a regex that matches any of the old names
+                if (sortedTokens.length > 0) {
+                    const pattern = '\\b(' + sortedTokens.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') +
+                        ')\\b';
+                    const re = new RegExp(pattern, 'g');
+                    result = result.replace(re, (match) => {
+                        return this.renameMap[match] || match;
+                    });
+                }
+
+                // ---- 5. Inject bogus flow into main (always-false if) ----
+                const mainRegex = /(int\s+main\s*\([^)]*\)\s*\{)/;
+                const mainMatch = result.match(mainRegex);
+                if (mainMatch) {
+                    const pos = mainMatch.index + mainMatch[0].length;
+                    const var1 = this._randomName('_t');
+                    const var2 = this._randomName('_u');
+                    // Ensure they are different
+                    let v1 = Math.floor(this.rng() * 101);
+                    let v2 = Math.floor(this.rng() * 101);
+                    while (v1 === v2) {
+                        v2 = Math.floor(this.rng() * 101);
+                    }
+                    const deadCode = `
+            int ${var1} = ${v1};
+            int ${var2} = ${v2};
+            if (${var1} == ${var2}) {
+                volatile int __dead_flow = 0;
+                __dead_flow = __dead_flow + 1;
+                __dead_flow = __dead_flow * 2;
+                (void)__dead_flow;
+            }
+            `;
+                    result = result.slice(0, pos) + deadCode + result.slice(pos);
+                }
+
+                return result;
+            }
+        }
+
+        // ------------------------------------------------------------
+        //  UI glue
+        // ------------------------------------------------------------
+        const inputEl = document.getElementById('inputCode');
+        const outputEl = document.getElementById('outputCode');
+        const seedDisplay = document.getElementById('seedDisplay');
+        const statLines = document.getElementById('statLines');
+        const statIdentifiers = document.getElementById('statIdentifiers');
+        const statStrings = document.getElementById('statStrings');
+        const toastEl = document.getElementById('toast');
+
+        function showToast(msg) {
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            clearTimeout(toastEl._hide);
+            toastEl._hide = setTimeout(() => toastEl.classList.remove('show'), 2500);
+        }
+
+        function updateStats(code) {
+            const lines = code.split('\n').length;
+            statLines.textContent = `Lines: ${lines}`;
+            // Count identifiers (simple)
+            const idMatches = code.match(/\b([A-Za-z_]\w*)\b/g);
+            const ids = idMatches ? new Set(idMatches) : new Set();
+            statIdentifiers.textContent = `Identifiers: ${ids.size}`;
+            // Count string literals (approx)
+            const strMatches = code.match(/__obf_decrypt\(/g);
+            statStrings.textContent = `Strings: ${strMatches ? strMatches.length : 0}`;
+        }
+
+        function obfuscate() {
+            const code = inputEl.value;
+            if (!code.trim()) {
+                showToast('⚠️ Please enter some C++ code.');
+                return;
+            }
+            const seed = Math.floor(Math.random() * 2 ** 32) >>> 0;
+            seedDisplay.textContent = `Seed: ${seed}`;
+            const obf = new CppObfuscator(seed);
+            try {
+                const result = obf.obfuscate(code);
+                outputEl.value = result;
+                updateStats(result);
+                showToast(`✅ Obfuscated! ${obf.idCount} identifiers renamed, ${obf.stringCount} strings encrypted.`);
+            } catch (e) {
+                showToast('❌ Error: ' + e.message);
+                console.error(e);
+            }
+        }
+
+        function loadSample() {
+            inputEl.value = `#include <iostream>
+        #include <string>
+        using namespace std;
+
+        int add(int a, int b) {
+            return a + b;
+        }
+
+        int main() {
+            int x = 10;
+            int y = 20;
+            int sum = add(x, y);
+            cout << "Sum is: " << sum << endl;
+            cout << "Hello, World!" << endl;
+            return 0;
+        }`;
+            outputEl.value = '';
+            updateStats(inputEl.value);
+            seedDisplay.textContent = 'Seed: random';
+            showToast('📄 Sample loaded. Click "Obfuscate" to transform it.');
+        }
+
+        function clearAll() {
+            inputEl.value = '';
+            outputEl.value = '';
+            seedDisplay.textContent = 'Seed: random';
+            statLines.textContent = 'Lines: 0';
+            statIdentifiers.textContent = 'Identifiers: 0';
+            statStrings.textContent = 'Strings: 0';
+            showToast('🗑️ Cleared.');
+        }
+
+        function copyOutput() {
+            const val = outputEl.value;
+            if (!val.trim()) {
+                showToast('⚠️ Nothing to copy — obfuscate first.');
+                return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(val).then(() => {
+                    showToast('📋 Copied to clipboard!');
+                }).catch(() => {
+                    fallbackCopy(val);
+                });
+            } else {
+                fallbackCopy(val);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+                document.execCommand('copy');
+                showToast('📋 Copied to clipboard!');
+            } catch (e) {
+                showToast('❌ Could not copy. Select manually.');
+            }
+            document.body.removeChild(ta);
+        }
+
+        // Auto-update stats when input changes
+        inputEl.addEventListener('input', () => {
+            updateStats(inputEl.value);
+        });
+
+        // Keyboard shortcut: Ctrl+Enter to obfuscate
+        inputEl.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                obfuscate();
+            }
+        });
+
+        // Load sample on startup
+        window.addEventListener('load', () => {
+            loadSample();
+            // Auto-obfuscate the sample so user sees immediate result
+            setTimeout(obfuscate, 100);
+        });
+
+        console.log('🧪 C++ Obfuscator loaded. Press Ctrl+Enter to obfuscate.');
+    </script>
+</body>
+</html>
